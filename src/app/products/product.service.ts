@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { BehaviorSubject, Observable } from 'rxjs';
 import { catchError, delay, first, map, max, mergeAll, shareReplay, tap } from 'rxjs/operators';
 import { Product } from './product.interface';
 
@@ -10,8 +10,10 @@ import { Product } from './product.interface';
 export class ProductService {
 
   private baseUrl = 'https://storerestservice.azurewebsites.net/api/products/';
-  products$: Observable<Product[]>;
+  private productSubject = new BehaviorSubject<Product[]>([]);
+  products$: Observable<Product[]> = this.productSubject.asObservable();
   mostExpensiveProduct$: Observable<Product>;
+  productsToLoad = 10;
 
   constructor(private http: HttpClient) {
     this.initProducts();
@@ -33,17 +35,26 @@ export class ProductService {
       )
   }
 
-  initProducts() {
-    let url:string = this.baseUrl + `?$orderby=ModifiedDate%20desc`;
+  initProducts(skip = 0, take = this.productsToLoad) {
+    let url = this.baseUrl + `?$skip=${skip}&$top=${take}&$orderby=ModifiedDate%20desc`;
 
-    this.products$ = this
-                      .http
-                      .get<Product[]>(url)
-                      .pipe(
-                        delay(1500), // Fake delay...
-                        tap(console.table),
-                        shareReplay()
-                      );
+    this
+      .http
+      .get<Product[]>(url)
+      .pipe(
+        delay(1500), // Fake delay...
+        tap(console.table),
+        shareReplay(),
+        map(
+          newProducts => {
+            let currentProducts = this.productSubject.value;
+            return currentProducts.concat(newProducts);
+          }
+        )
+      )
+      .subscribe(
+        fullProducts => this.productSubject.next(fullProducts)
+      );
   }
 
   insertProduct(newProduct: Product): Observable<Product> {
