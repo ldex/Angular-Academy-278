@@ -3,13 +3,15 @@
 </h2>
 
 <div class="right">
+    {{ productsNumber$ | async }} products /
+
     {favourites, plural,
     =0 {no favourite}
     =1 {1 favourite}
     other {{{favourites}} favourites}
     }
 </div>
-<div> 
+<div>
     <!-- Search: <input type="text" [formControl]="filter" placeholder="filter by name"> -->
     &nbsp;
 </div>
@@ -31,6 +33,11 @@
 </ul>
 
 <div class="right">
+    <span *ngIf="mostExpensiveProduct$ | async as mostExpensiveProduct">
+        Most expensive:
+        {{ mostExpensiveProduct?.name }}
+        {{ mostExpensiveProduct?.price | currency: "CAD":"symbol-narrow":".2" }}
+    </span>
     <button (click)="refresh()">Refresh List</button>&nbsp;
     <a routerLink="insert">Add new product...</a>
 </div>
@@ -41,7 +48,8 @@
         < Previous Page
     </button>
     Page {{ currentPage }}
-    <button (click)="nextPage()">
+    <button (click)="nextPage()"
+            [disabled]="(productsNumber$ | async) <= end">
         Next Page >
     </button>
 </div>
