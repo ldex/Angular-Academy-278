@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { BehaviorSubject, Observable } from 'rxjs';
-import { catchError, delay, first, map, max, mergeAll, shareReplay, tap } from 'rxjs/operators';
+import { BehaviorSubject, Observable, of } from 'rxjs';
+import { catchError, delay, filter, first, map, max, mergeAll, shareReplay, switchMap, tap } from 'rxjs/operators';
 import { Product } from './product.interface';
 
 @Injectable({
@@ -25,13 +25,19 @@ export class ProductService {
       this
       .products$
       .pipe(
-        map(products => [...products].sort((p1, p2) => p1.price > p2.price ? -1 : 1)),
-        // [{}, {}, {}, {}, {}, {}, {}, {}, {}, {}]
-        // 1 item!!!
-        mergeAll(),
-        // {}, {}, {}, {}, {}, {}, {}, {}, {}, {}
-        // 10 items!!
-        first()
+        filter(products => products.length > 0),
+        switchMap(
+          products => of(products)
+                      .pipe(
+                        map(products => [...products].sort((p1, p2) => p1.price > p2.price ? -1 : 1)),
+                        // [{}, {}, {}, {}, {}, {}, {}, {}, {}, {}]
+                        // 1 item!!!
+                        mergeAll(),
+                        // {}, {}, {}, {}, {}, {}, {}, {}, {}, {}
+                        // 10 items!!
+                        first()
+                      )
+        )
       )
   }
 
